@@ -1,0 +1,78 @@
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
+local Window = OrionLib:MakeWindow({Name = "Color Changing Paint Bucket", HidePremium = false, SaveConfig = true, ConfigFolder = "OrionTest"})
+local Tab = Window:MakeTab({
+
+-- Tabs
+    Name = "Coloring",
+	Icon = "rbxassetid://4483345998",
+	PremiumOnly = false
+})
+
+-- Buttons
+ColoringTab:AddButton({
+	Name = "Tp to input board!",
+	Callback = function()
+      		print("button pressed")
+              local MaxConcurrentThreads = 20000 -- Adjust this value as needed
+
+              local function PaintBlock(block)
+                  local Data = {}
+                  Data.Part = block
+                  Data.Color = Color3.fromRGB(255, 255, 255) -- White color
+              
+                  game.Players.LocalPlayer.Character:FindFirstChildOfClass("Tool").Remotes.ServerControls:InvokeServer("PaintPart", Data)
+              end
+              
+              local function IsBlockPainted(block, PaintedBlocks)
+                  for _, paintedBlock in pairs(PaintedBlocks) do
+                      if paintedBlock == block then
+                          return true
+                      end
+                  end
+                  return false
+              end
+              
+              local function PainterThread(blocks)
+                  local PaintedBlocks = {}
+              
+                  for i, v in pairs(blocks) do
+                      if v:IsA("BasePart") and not IsBlockPainted(v, PaintedBlocks) then
+                          PaintBlock(v)
+                          table.insert(PaintedBlocks, v)
+                      end
+                  end
+              end
+              
+              local a = workspace:GetDescendants()
+              local numBlocks = #a
+              local blockSize = math.ceil(numBlocks / MaxConcurrentThreads)
+              
+              for i = 1, MaxConcurrentThreads do
+                  local startIndex = (i - 1) * blockSize + 1
+                  local endIndex = math.min(i * blockSize, numBlocks)
+                  local blocksToPaint = {}
+              
+                  for j = startIndex, endIndex do
+                      table.insert(blocksToPaint, a[j])
+                  end
+              
+                  coroutine.wrap(PainterThread)(blocksToPaint)
+              end
+              
+              while true do
+                  local runningThreads = 0
+                  for _, thread in ipairs(coroutines.list()) do
+                      if coroutine.status(thread) ~= "dead" then
+                          runningThreads = runningThreads + 1
+                      end
+                  end
+                  if runningThreads == 0 then
+                      break
+                  end
+                  wait(0.1) -- Adjust the wait time as needed
+              end
+              
+              print("All blocks painted white!")
+              
+  	end    
+})
